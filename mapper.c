@@ -3,7 +3,7 @@
  * device onto a linear range of another device.
  *
  * See http://narendrapal2020.blogspot.com/2014/03/device-mapper.html and
- * techgmm.blogspot.com/p/writing-your-own-device-mapper-target.html.
+ * http://techgmm.blogspot.com/p/writing-your-own-device-mapper-target.html.
  *
  * Test on linux kernel 2.6.32.
  */
@@ -15,30 +15,34 @@
 #include <linux/device-mapper.h>
 #include <linux/slab.h>
 
+#define DM_MSG_PREFIX "hello"
+
 /* For underlying device */
 struct my_dm_target {
     struct dm_dev *dev;
     sector_t start;
 };
 
-/* Map function , called whenever target gets a bio request. */
+/* Map function, called whenever target gets a bio request. */
 
-static int hello_target_map(struct dm_target *target, struct bio *bio,union map_info *map_context)
+static int hello_target_map(struct dm_target *target, struct bio *bio,
+			    union map_info *map_context)
 {
     struct my_dm_target *mdt = (struct my_dm_target *) target->private;
 
-    printk("\nEntry : %s",__func__);
+    DMINFO("Entry: %s", __func__);
 
     /*  bio should perform on our underlying device   */
     bio->bi_bdev = mdt->dev->bdev;
 
     if ((bio->bi_rw & WRITE) == WRITE)
-        printk("\nbio is a write request");
+        DMINFO("bio is a write request");
     else
-        printk("\nbio is a read request");
+        DMINFO("bio is a read request");
 
-    submit_bio(bio->bi_rw,bio);
-    printk("\nExit : %s",__func__);
+    submit_bio(bio->bi_rw, bio);
+
+    DMINFO("Exit : %s", __func__);
     return DM_MAPIO_SUBMITTED;
 }
 
@@ -46,15 +50,16 @@ static int hello_target_map(struct dm_target *target, struct bio *bio,union map_
  * This is constructor function of target gets called when we create some device of type 'hello_target'.
  * i.e on execution of command 'dmsetup create'. It gets called per device.
  */
-static int hello_target_ctr(struct dm_target *target,unsigned int argc,char **argv)
+static int hello_target_ctr(struct dm_target *target,
+			    unsigned int argc, char **argv)
 {
     struct my_dm_target *mdt;
     unsigned long long start;
     int ret = 0;
-    printk("\nEntry : %s",__func__);
+    DMINFO("Entry: %s", __func__);
 
     if (argc != 2) {
-        printk("\n Invalid no.of arguments.\n");
+        DMINFO("Invalid no. of arguments.");
         target->error = "Invalid argument count";
         ret =  -EINVAL;
     }
@@ -62,7 +67,7 @@ static int hello_target_ctr(struct dm_target *target,unsigned int argc,char **ar
     mdt = kmalloc(sizeof(struct my_dm_target), GFP_KERNEL);
 
     if (mdt==NULL) {
-        printk("\n Error in kmalloc\n");
+        DMINFO(" Error in kmalloc");
         target->error = "Cannot allocate linear context";
         ret = -ENOMEM;
     }
@@ -76,18 +81,19 @@ static int hello_target_ctr(struct dm_target *target,unsigned int argc,char **ar
 
     /*  To add device in target's table and increment in device count */
 
-    if (dm_get_device(target, argv[0], start, target->len, dm_table_get_mode(target->table), &mdt->dev)) {
+    if (dm_get_device(target, argv[0], start, target->len,
+		      dm_table_get_mode(target->table), &mdt->dev)) {
         target->error = "Device lookup failed";
         goto out;
     }
 
     target->private = mdt;
 
-    printk("\nExit : %s ",__func__);
+    DMINFO("Exit : %s ", __func__);
     return ret;
 
 out:
-    printk("\nExit : %s with ERROR",__func__);
+    DMINFO("Exit : %s with ERROR", __func__);
     return ret;
 }
 
@@ -98,10 +104,10 @@ out:
 static void hello_target_dtr(struct dm_target *ti)
 {
     struct my_dm_target *mdt = (struct my_dm_target *) ti->private;
-    printk("\nEntry : %s",__func__);
+    DMINFO("Entry: %s", __func__);
     dm_put_device(ti, mdt->dev);
     kfree(mdt);
-    printk("\nExit : %s",__func__);
+    DMINFO("Exit : %s", __func__);
 }
 /*  This structure is fops for hello target */
 static struct target_type hello_target = {
@@ -119,24 +125,24 @@ static struct target_type hello_target = {
 static int init_hello_target(void)
 {
     int result;
-    printk("\nEntry : %s",__func__);
+    DMINFO("Entry: %s", __func__);
     result = dm_register_target(&hello_target);
     if (result < 0) {
-        printk("\nError in registering target");
+        DMINFO("Error in registering target");
     } else {
-        printk("\nTarget registered");
+        DMINFO("Target registered");
     }
-    printk("\nExit : %s",__func__);
+    DMINFO("Exit : %s", __func__);
     return 0;
 }
 
 
 static void cleanup_hello_target(void)
 {
-    printk("\nEntry : %s",__func__);
+    DMINFO("Entry: %s", __func__);
     dm_unregister_target(&hello_target);
-    printk("\nTarget unregistered");
-    printk("\nExit : %s",__func__);
+    DMINFO("Target unregistered");
+    DMINFO("Exit : %s", __func__);
 }
 
 module_init(init_hello_target);
