@@ -59,7 +59,7 @@ static int hello_target_ctr(struct dm_target *target,
     DMINFO("Entry: %s", __func__);
 
     if (argc != 2) {
-        DMINFO("Invalid no. of arguments.");
+        DMERR("Invalid no. of arguments.");
         target->error = "Invalid argument count";
         ret =  -EINVAL;
     }
@@ -67,7 +67,7 @@ static int hello_target_ctr(struct dm_target *target,
     mdt = kmalloc(sizeof(struct my_dm_target), GFP_KERNEL);
 
     if (mdt==NULL) {
-        DMINFO(" Error in kmalloc");
+        DMERR("Error in kmalloc");
         target->error = "Cannot allocate linear context";
         ret = -ENOMEM;
     }
@@ -93,7 +93,7 @@ static int hello_target_ctr(struct dm_target *target,
     return ret;
 
 out:
-    DMINFO("Exit : %s with ERROR", __func__);
+    DMERR("Exit : %s with ERROR", __func__);
     return ret;
 }
 
@@ -128,7 +128,7 @@ static int init_hello_target(void)
     DMINFO("Entry: %s", __func__);
     result = dm_register_target(&hello_target);
     if (result < 0) {
-        DMINFO("Error in registering target");
+        DMERR("Error in registering target");
     } else {
         DMINFO("Target registered");
     }
